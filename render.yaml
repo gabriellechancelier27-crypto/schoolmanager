@@ -1,0 +1,34 @@
+databases:
+  - name: schoolmanager-db
+    plan: free
+    databaseName: schoolmanager
+    user: schoolmanager
+
+services:
+  - type: web
+    name: schoolmanager
+    runtime: python
+    plan: free
+    buildCommand: >-
+      cd frontend && npm install && npm run build && cd .. &&
+      pip install -r requirements.txt &&
+      rm -rf frontend_dist && cp -r frontend/dist frontend_dist &&
+      python manage.py collectstatic --noinput
+    startCommand: >-
+      python manage.py migrate --noinput &&
+      python manage.py seed_if_empty &&
+      gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /login
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.3
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_ADMIN
+        value: "0"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: schoolmanager-db
+          property: connectionString

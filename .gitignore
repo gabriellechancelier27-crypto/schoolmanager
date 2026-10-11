@@ -1,0 +1,13 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.sqlite3
+.env
+media/
+qa_media/
+staticfiles/
+frontend_dist/
+node_modules/
+dist/
+*.env
