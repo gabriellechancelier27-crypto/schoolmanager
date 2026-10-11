@@ -29,15 +29,32 @@ class LoginSerializer(TokenObtainPairSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     school_name = serializers.SerializerMethodField()
+    linked_to = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ["id", "username", "first_name", "last_name", "email", "phone",
-                  "role", "school", "school_name", "is_active"]
-        read_only_fields = ["role", "school"]
+                  "role", "school", "school_name", "is_active", "last_login", "linked_to"]
+        read_only_fields = ["role", "school", "last_login"]
 
     def get_school_name(self, obj):
         return obj.school.name if obj.school else None
+
+    def get_linked_to(self, obj):
+        """Nom de la fiche (enseignant, parent ou élève) reliée à ce compte."""
+        for attr in ("teacher_profile", "parent_profile", "student_profile"):
+            profile = getattr(obj, attr, None)
+            if profile is not None:
+                return f"{profile.last_name} {profile.first_name}"
+        return None
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """Ce qu'un utilisateur peut modifier lui-même (jamais son rôle ni son établissement)."""
+
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email", "phone"]
 
 
 class UserCreateSerializer(serializers.ModelSerializer):

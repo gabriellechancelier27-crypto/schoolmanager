@@ -3,6 +3,7 @@ import { ROLES, can, useAuth } from "../auth";
 import { api, downloadFile, errMessage, getAll, mediaUrl, patch, post, useList } from "../api";
 import { Badge, Empty, ErrorBox, Field, FormModal, Modal, PageHeader,
          Pagination, Spinner, SuccessBox } from "../components/ui";
+import { AccessButton } from "../components/Credentials";
 
 const FIELDS = [
   { name: "first_name", label: "Prénom" },
@@ -104,7 +105,7 @@ function ParentsModal({ student, onClose, onSaved }) {
       </div>
       <p className="hint">
         Le parent doit d'abord exister dans la page « Parents ». Il verra les notes de l'élève
-        une fois son compte de connexion rattaché à sa fiche.
+        une fois son accès créé et relié à cet élève.
       </p>
       <div className="modal-actions">
         <button className="btn" onClick={add} disabled={!parentId}>+ Ajouter à la liste</button>
@@ -218,7 +219,8 @@ export default function Students() {
               <table className="table">
                 <thead>
                   <tr><th /><th>Matricule</th><th>Nom & prénom</th><th>Sexe</th>
-                      <th>Classe</th><th>Parents</th><th>Statut</th>{canWrite && <th />}</tr>
+                      <th>Classe</th><th>Parents</th><th>Statut</th>
+                      {canWrite && <th>Accès</th>}{canWrite && <th />}</tr>
                 </thead>
                 <tbody>
                   {list.items.map((s) => (
@@ -234,7 +236,11 @@ export default function Students() {
                       <td><Badge tone={s.status === "ACTIVE" ? "green" : "gray"}>
                             {s.status === "ACTIVE" ? "Actif" : s.status}</Badge></td>
                       {canWrite && (
+                        <td><Badge tone={s.user ? "green" : "gray"}>{s.user ? "Actif" : "Aucun"}</Badge></td>
+                      )}
+                      {canWrite && (
                         <td className="row-actions">
+                          <AccessButton kind="student" item={s} onDone={list.reload} />
                           <button className="btn btn-sm" onClick={() => setEditing(s)}>Modifier</button>
                           <button className="btn btn-sm" onClick={() => setParentsOf(s)}>Parents</button>
                           <label className="btn btn-sm">

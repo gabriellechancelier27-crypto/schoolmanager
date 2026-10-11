@@ -177,3 +177,12 @@ textarea.input { min-height: 70px; resize: vertical; }
   border-bottom: 1px solid var(--border); padding: 8px 12px; cursor: pointer; font-size: 14px; }
 .picker-item:hover { background: #f5f8fa; }
 .notif-dot { width: 8px; height: 8px; flex-shrink: 0; }
+.cred-box { background: #f6f8fa; border: 1px dashed var(--border); border-radius: 8px;
+  padding: 10px 14px; margin: 12px 0; }
+.cred-row { display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; padding: 5px 0; }
+.cred-row code { font-size: 15px; font-weight: 700; background: #eef1f3;
+  padding: 2px 8px; border-radius: 4px; user-select: all; }
+textarea.cred-text { font-family: Consolas, monospace; font-size: 12.5px; }
+.topbar-name { color: inherit; text-decoration: none; }
+.topbar-name:hover { text-decoration: underline; }

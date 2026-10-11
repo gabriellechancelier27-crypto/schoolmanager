@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { can, useAuth } from "../auth";
-import { del, patch, post } from "../api";
+import { del, patch, post, useList } from "../api";
 import { Empty, ErrorBox, FormModal, PageHeader, Pagination, Spinner } from "../components/ui";
 
-export default function Crud({ title, subtitle, endpoint, columns, fields, roles, searchPlaceholder }) {
+export default function Crud({ title, subtitle, endpoint, columns, fields, roles,
+                               searchPlaceholder, rowExtra }) {
   const { user } = useAuth();
   const canWrite = can(user, roles);
-  const list = useListSafe(endpoint);
+  const isAdmin = can(user, ["SCHOOL_ADMIN"]);
+  const showActions = canWrite || (rowExtra && isAdmin);
+  const list = useList(endpoint);
   const [editing, setEditing] = useState(null);
 
   async function save(form) {
@@ -38,7 +41,7 @@ export default function Crud({ title, subtitle, endpoint, columns, fields, roles
             <div className="table-wrap">
               <table className="table">
                 <thead>
-                  <tr>{columns.map((c) => <th key={c.key}>{c.label}</th>)}{canWrite && <th />}</tr>
+                  <tr>{columns.map((c) => <th key={c.key}>{c.label}</th>)}{showActions && <th />}</tr>
                 </thead>
                 <tbody>
                   {list.items.map((item) => (
@@ -46,10 +49,15 @@ export default function Crud({ title, subtitle, endpoint, columns, fields, roles
                       {columns.map((c) => (
                         <td key={c.key}>{c.render ? c.render(item) : (item[c.key] ?? "—")}</td>
                       ))}
-                      {canWrite && (
+                      {showActions && (
                         <td className="row-actions">
-                          <button className="btn btn-sm" onClick={() => setEditing(item)}>Modifier</button>
-                          <button className="btn btn-sm btn-danger" onClick={() => remove(item)}>Suppr.</button>
+                          {rowExtra && isAdmin && rowExtra(item, list.reload)}
+                          {canWrite && (
+                            <>
+                              <button className="btn btn-sm" onClick={() => setEditing(item)}>Modifier</button>
+                              <button className="btn btn-sm btn-danger" onClick={() => remove(item)}>Suppr.</button>
+                            </>
+                          )}
                         </td>
                       )}
                     </tr>
@@ -69,7 +77,3 @@ export default function Crud({ title, subtitle, endpoint, columns, fields, roles
     </div>
   );
 }
-
-// petit wrapper pour éviter un import circulaire d'identifiants
-import { useList } from "../api";
-function useListSafe(endpoint) { return useList(endpoint); }
