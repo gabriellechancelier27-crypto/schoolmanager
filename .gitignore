@@ -7,7 +7,6 @@ __pycache__/
 media/
 qa_media/
 staticfiles/
-frontend_dist/
 node_modules/
 dist/
 *.env
