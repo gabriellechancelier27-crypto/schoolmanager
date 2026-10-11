@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { ROLES, useAuth } from "../auth";
 
 const MENU = [
@@ -12,12 +12,14 @@ const MENU = [
   { to: "/inscriptions", label: "Inscriptions", roles: ROLES.MANAGERS },
   { to: "/matieres", label: "Matières", roles: ROLES.STAFF },
   { to: "/annee", label: "Année scolaire", roles: ROLES.MANAGERS },
+  { to: "/comptes", label: "Comptes", roles: ["SCHOOL_ADMIN"] },
   { to: "/notes", label: "Saisie des notes", roles: ROLES.GRADES, end: true },
   { to: "/notes/historique", label: "Historique des notes", roles: ROLES.GRADES },
   { to: "/bulletins", label: "Bulletins & classement" },
   { to: "/presences", label: "Présences" },
   { to: "/finance", label: "Finance", roles: [...ROLES.FINANCE, "PARENT"] },
   { to: "/communication", label: "Communication" },
+  { to: "/profil", label: "Mon profil", everyone: true },
 ];
 
 const ROLE_LABELS = {
@@ -27,6 +29,7 @@ const ROLE_LABELS = {
 
 // Le super admin gère la plateforme (établissements) ; les autres pages dépendent d'un établissement.
 function visible(item, user) {
+  if (item.everyone) return true;
   if (user.role === "SUPER_ADMIN") return item.superOnly || item.to === "/";
   if (item.superOnly) return false;
   return !item.roles || item.roles.includes(user.role);
@@ -55,7 +58,7 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-footer">Devise : FCFA · v1.1</div>
+        <div className="sidebar-footer">Devise : FCFA · v1.2</div>
       </aside>
       {open && <div className="overlay" onClick={() => setOpen(false)} />}
       <div className="main">
@@ -63,7 +66,7 @@ export default function Layout() {
           <button className="burger" onClick={() => setOpen(!open)}>☰</button>
           <div className="topbar-title">{user.school_name || "Plateforme SchoolManager"}</div>
           <div className="topbar-user">
-            <span className="topbar-name">{user.first_name} {user.last_name}</span>
+            <Link to="/profil" className="topbar-name">{user.first_name} {user.last_name}</Link>
             <span className="badge tone-blue">{ROLE_LABELS[user.role] || user.role}</span>
             <button className="btn btn-sm" onClick={handleLogout}>Déconnexion</button>
           </div>

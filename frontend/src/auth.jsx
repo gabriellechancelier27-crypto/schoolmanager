@@ -25,6 +25,12 @@ export function AuthProvider({ children }) {
     return me;
   }
 
+  async function refreshUser() {
+    const me = await get("/me/");
+    setUser(me);
+    return me;
+  }
+
   function logout() {
     localStorage.removeItem("sm_access");
     localStorage.removeItem("sm_refresh");
@@ -32,7 +38,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
