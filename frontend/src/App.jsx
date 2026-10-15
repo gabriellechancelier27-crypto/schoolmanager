@@ -9,7 +9,7 @@ import Students from "./pages/Students";
 import Teachers from "./pages/Teachers";
 import ParentsPage from "./pages/ParentsPage";
 import SubjectsPage from "./pages/SubjectsPage";
-import ClassRooms from "./pages/ClassRoomsPage";
+import ClassRooms from "./pages/ClassRooms";
 import Enrollments from "./pages/Enrollments";
 import SchoolYearPage from "./pages/SchoolYearPage";
 import Grades from "./pages/Grades";
@@ -18,6 +18,8 @@ import ReportCards from "./pages/ReportCards";
 import Attendance from "./pages/Attendance";
 import Finance from "./pages/Finance";
 import Communication from "./pages/Communication";
+import Users from "./pages/Users";
+import Profile from "./pages/Profile";
 
 function Guard({ roles, children }) {
   const { user, loading } = useAuth();
@@ -44,12 +46,14 @@ export default function App() {
             <Route path="inscriptions" element={<Guard roles={ROLES.MANAGERS}><Enrollments /></Guard>} />
             <Route path="matieres" element={<Guard roles={ROLES.STAFF}><SubjectsPage /></Guard>} />
             <Route path="annee" element={<Guard roles={ROLES.MANAGERS}><SchoolYearPage /></Guard>} />
+            <Route path="comptes" element={<Guard roles={["SCHOOL_ADMIN"]}><Users /></Guard>} />
             <Route path="notes" element={<Guard roles={ROLES.GRADES}><Grades /></Guard>} />
             <Route path="notes/historique" element={<Guard roles={ROLES.GRADES}><GradesHistory /></Guard>} />
             <Route path="bulletins" element={<ReportCards />} />
             <Route path="presences" element={<Attendance />} />
             <Route path="finance" element={<Guard roles={[...ROLES.FINANCE, "PARENT"]}><Finance /></Guard>} />
             <Route path="communication" element={<Communication />} />
+            <Route path="profil" element={<Profile />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

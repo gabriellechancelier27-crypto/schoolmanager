@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { errMessage } from "../api";
+import Icon from "./Icon";
 
 export const fmtFCFA = (n) =>
   n === null || n === undefined ? "—"
@@ -10,26 +11,72 @@ export const todayStr = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-export function Spinner() { return <div className="spinner" />; }
+const reducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Fait monter un nombre de 0 à sa valeur (désactivé si l'utilisateur réduit les animations). */
+export function useCountUp(target, duration = 800) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    const n = Number(target);
+    if (!Number.isFinite(n)) return undefined;
+    if (reducedMotion()) { setVal(n); return undefined; }
+    let raf;
+    let start;
+    const step = (t) => {
+      if (start === undefined) start = t;
+      const p = Math.min((t - start) / duration, 1);
+      setVal(n * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return val;
+}
+
+export function Spinner() { return <div className="spinner" role="status" aria-label="Chargement" />; }
+
+export function Skeleton({ height = 16, width = "100%", className = "" }) {
+  return <div className={`skeleton ${className}`} style={{ height, width }} />;
+}
 
 export function ErrorBox({ error }) {
-  return error ? <div className="alert alert-error">{error}</div> : null;
+  return error ? <div className="alert alert-error" role="alert">{error}</div> : null;
 }
 
 export function SuccessBox({ children }) {
-  return children ? <div className="alert alert-success">{children}</div> : null;
+  return children ? <div className="alert alert-success" role="status">{children}</div> : null;
 }
 
 export function Badge({ children, tone = "gray" }) {
   return <span className={`badge tone-${tone}`}>{children}</span>;
 }
 
-export function StatCard({ label, value, hint }) {
+/**
+ * Carte de chiffre clé.
+ * - value numérique : le nombre monte jusqu'à sa valeur (format = mise en forme facultative)
+ * - icon : nom d'icône ; tone : blue | green | amber | coral | slate ; unit : petit texte après le nombre (ex. FCFA)
+ */
+export function StatCard({ label, value, hint, icon, tone = "blue", format, unit }) {
+  const isNum = typeof value === "number" && Number.isFinite(value);
+  const animated = useCountUp(isNum ? value : 0);
+  let shown = value ?? "—";
+  if (isNum) {
+    if (format) shown = format(animated);
+    else if (Number.isInteger(value)) shown = new Intl.NumberFormat("fr-FR").format(Math.round(animated));
+    else shown = (Math.round(animated * 10) / 10).toLocaleString("fr-FR");
+  }
   return (
-    <div className="stat-card">
-      <div className="stat-value">{value ?? "—"}</div>
-      <div className="stat-label">{label}</div>
-      {hint && <div className="stat-hint">{hint}</div>}
+    <div className={`stat-card stat-${tone}`}>
+      {icon && <span className="stat-icon"><Icon name={icon} size={22} /></span>}
+      <div className="stat-body">
+        <div className="stat-value">{shown}{unit && <small>{unit}</small>}</div>
+        <div className="stat-label">{label}</div>
+        {hint && <div className="stat-hint">{hint}</div>}
+      </div>
     </div>
   );
 }
@@ -47,14 +94,21 @@ export function PageHeader({ title, subtitle, children }) {
 }
 
 export function Modal({ title, open, onClose, children, wide }) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
     <div className="modal-overlay"
          onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`modal ${wide ? "modal-wide" : ""}`}>
+      <div className={`modal ${wide ? "modal-wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-head">
           <h3>{title}</h3>
-          <button className="modal-close" onClick={onClose} type="button">×</button>
+          <button className="modal-close" onClick={onClose} type="button" aria-label="Fermer">×</button>
         </div>
         <div className="modal-body">{children}</div>
       </div>
@@ -74,7 +128,12 @@ export function Pagination({ page, setPage, next, previous, count }) {
 }
 
 export function Empty({ message = "Aucune donnée" }) {
-  return <div className="empty">{message}</div>;
+  return (
+    <div className="empty">
+      <Icon name="inbox" size={30} />
+      <span>{message}</span>
+    </div>
+  );
 }
 
 export function Field({ label, children }) {
