@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ROLES, useAuth } from "../auth";
 
 const MENU = [
@@ -36,9 +36,18 @@ function visible(item, user) {
 }
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  if (loading) {
+    return <div className="app-loading">Chargement...</div>;
+  }
+
+  if (!user) {
+    return null;
+  }
 
   function handleLogout() { logout(); navigate("/login"); }
 
@@ -76,3 +85,4 @@ export default function Layout() {
     </div>
   );
 }
+
