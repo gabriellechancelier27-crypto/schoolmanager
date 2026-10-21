@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "../auth";
 import { errMessage, patch, post } from "../api";
 import { ErrorBox, Field, PageHeader, SuccessBox } from "../components/ui";
@@ -21,38 +21,59 @@ export default function Profile() {
   const [err, setErr] = useState("");
   const [msgPwd, setMsgPwd] = useState("");
   const [errPwd, setErrPwd] = useState("");
+  const [busyInfo, setBusyInfo] = useState(false);
+  const [busyPwd, setBusyPwd] = useState(false);
+  // Verrous immédiats : un double clic ne doit jamais envoyer deux requêtes
+  const infoLock = useRef(false);
+  const pwdLock = useRef(false);
 
   async function saveInfo(e) {
     e.preventDefault();
-    setErr(""); setMsg("");
+    if (infoLock.current) return;
+    infoLock.current = true;
+    setBusyInfo(true); setErr(""); setMsg("");
     try {
       await patch("/me/", info);
       await refreshUser();
       setMsg("Profil mis à jour.");
-    } catch (x) { setErr(errMessage(x)); }
+    } catch (x) {
+      setErr(errMessage(x));
+    } finally {
+      infoLock.current = false;
+      setBusyInfo(false);
+    }
   }
 
   async function savePassword(e) {
     e.preventDefault();
+    if (pwdLock.current) return;
     setErrPwd(""); setMsgPwd("");
     if (pwd.new_password !== pwd.confirm) {
       setErrPwd("Les deux nouveaux mots de passe ne correspondent pas.");
       return;
     }
+    pwdLock.current = true;
+    setBusyPwd(true);
     try {
       await post("/me/password/", {
         old_password: pwd.old_password, new_password: pwd.new_password,
       });
       setPwd(EMPTY_PWD);
-      setMsgPwd("Mot de passe modifié.");
-    } catch (x) { setErrPwd(errMessage(x)); }
+      setErrPwd("");
+      setMsgPwd("Mot de passe modifié. Utilisez-le à votre prochaine connexion.");
+    } catch (x) {
+      setErrPwd(errMessage(x));
+    } finally {
+      pwdLock.current = false;
+      setBusyPwd(false);
+    }
   }
 
   return (
     <div>
       <PageHeader title="Mon profil"
-        subtitle={`${user.username} · ${ROLE_LABELS[user.role] || user.role}`
-          + (user.school_name ? ` · ${user.school_name}` : "")} />
+        subtitle={`${user.username}, ${ROLE_LABELS[user.role] || user.role}`
+          + (user.school_name ? `, ${user.school_name}` : "")} />
       <div className="grid-2">
         <form className="card" onSubmit={saveInfo}>
           <h2>Mes informations</h2>
@@ -77,7 +98,9 @@ export default function Profile() {
             </Field>
           </div>
           <div className="modal-actions">
-            <button className="btn btn-primary">Enregistrer</button>
+            <button className="btn btn-primary" disabled={busyInfo}>
+              {busyInfo ? "Enregistrement…" : "Enregistrer"}
+            </button>
           </div>
         </form>
 
@@ -101,7 +124,9 @@ export default function Profile() {
                    onChange={(e) => setPwd({ ...pwd, confirm: e.target.value })} />
           </Field>
           <div className="modal-actions">
-            <button className="btn btn-primary">Modifier le mot de passe</button>
+            <button className="btn btn-primary" disabled={busyPwd}>
+              {busyPwd ? "Modification…" : "Modifier le mot de passe"}
+            </button>
           </div>
         </form>
       </div>

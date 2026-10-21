@@ -13,6 +13,7 @@ const FIELDS = [
   { name: "birth_date", label: "Date de naissance", type: "date", required: false },
   { name: "birth_place", label: "Lieu de naissance", required: false },
   { name: "phone", label: "Téléphone", required: false },
+     { name: "admission_code", label: "Code de statut (bulletin : N, R, A…)", required: false },
   { name: "status", label: "Statut", type: "select", options: [
     { value: "ACTIVE", label: "Actif" }, { value: "INACTIVE", label: "Inactif" },
     { value: "GRADUATED", label: "Diplômé" }, { value: "TRANSFERRED", label: "Transféré" }] },

@@ -74,17 +74,18 @@ class Command(BaseCommand):
             ClassRoom.objects.create(school=school, name="5ème A", level="5ème",
                                      main_teacher=teachers["autres"]),
         ]
+        # (nom, code, coefficient, enseignant, catégorie pour le bulletin)
         subject_specs = [
-            ("Mathématiques", "MATH", Decimal("4"), "maths"),
-            ("Français", "FRAN", Decimal("4"), "francais"),
-            ("Anglais", "ANGL", Decimal("2"), "autres"),
-            ("SVT", "SVTE", Decimal("2"), "autres"),
-            ("Histoire-Géographie", "HIGE", Decimal("2"), "autres"),
-            ("EPS", "EPS", Decimal("1"), "autres"),
+            ("Français", "FRAN", Decimal("4"), "francais", "LITTERAIRE"),
+            ("Anglais", "ANGL", Decimal("2"), "autres", "LITTERAIRE"),
+            ("Histoire-Géographie", "HIGE", Decimal("2"), "autres", "LITTERAIRE"),
+            ("Mathématiques", "MATH", Decimal("4"), "maths", "SCIENTIFIQUE"),
+            ("SVT", "SVTE", Decimal("2"), "autres", "SCIENTIFIQUE"),
+            ("EPS", "EPS", Decimal("1"), "autres", "AUTRE"),
         ]
-        for name, code, coef, key in subject_specs:
+        for name, code, coef, key, category in subject_specs:
             subject = Subject.objects.create(school=school, name=name, code=code,
-                                             default_coefficient=coef)
+                                             default_coefficient=coef, category=category)
             for class_room in classes:
                 TeachingAssignment.objects.create(school=school, school_year=year,
                                                   teacher=teachers[key], subject=subject,
@@ -102,7 +103,8 @@ class Command(BaseCommand):
                 school=school, first_name=random.choice(PRENOMS), last_name=random.choice(NOMS),
                 gender=random.choice(["M", "F"]),
                 birth_date=date(2013, random.randint(1, 12), random.randint(1, 28)),
-                birth_place=random.choice(["Lomé", "Kara", "Atakpamé", "Dapaong", "Aného"]))
+                birth_place=random.choice(["Lomé", "Kara", "Atakpamé", "Dapaong", "Aného"]),
+                admission_code=random.choice(["N", "N", "R"]))
             StudentParent.objects.create(student=student, parent=parents[i % 10], relation="TUTEUR")
             enrollments.append(Enrollment.objects.create(student=student,
                                                          class_room=classes[i % 3],
@@ -134,7 +136,7 @@ class Command(BaseCommand):
 
         # Absences
         subject_list = [Subject.objects.get(school=school, code=code)
-                        for _, code, _, _ in subject_specs]
+                        for _, code, _, _, _ in subject_specs]
         for enrollment in enrollments[:10]:
             Attendance.objects.create(
                 student=enrollment.student, class_room=enrollment.class_room, school_year=year,

@@ -1,7 +1,4 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from django.utils import timezone
 
 
@@ -91,6 +88,8 @@ class Student(models.Model):
     phone = models.CharField("téléphone", max_length=30, blank=True)
     photo = models.ImageField("photo", upload_to="students/photos/", null=True, blank=True)
     status = models.CharField("statut", max_length=15, choices=Status.choices, default=Status.ACTIVE)
+    # Code de statut scolaire imprimé sur le bulletin (ex. N, R, A) : libre selon l'établissement
+    admission_code = models.CharField("code de statut (bulletin)", max_length=10, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -165,11 +164,19 @@ class ClassRoom(models.Model):
 
 
 class Subject(models.Model):
+    class Category(models.TextChoices):
+        LITTERAIRE = "LITTERAIRE", "Matières littéraires"
+        SCIENTIFIQUE = "SCIENTIFIQUE", "Matières scientifiques"
+        AUTRE = "AUTRE", "Autres matières (EPS, etc.)"
+
     school = models.ForeignKey("schools.School", on_delete=models.CASCADE, related_name="subjects")
     name = models.CharField("nom", max_length=100)
     code = models.CharField("code", max_length=20, blank=True)
     default_coefficient = models.DecimalField("coefficient par défaut", max_digits=4,
                                               decimal_places=1, default=1)
+    # Sert à regrouper les matières sur le bulletin
+    category = models.CharField("catégorie", max_length=15, choices=Category.choices,
+                                default=Category.AUTRE)
 
     class Meta:
         ordering = ["name"]

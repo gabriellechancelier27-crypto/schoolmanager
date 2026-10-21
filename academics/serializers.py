@@ -34,7 +34,7 @@ class ParentSerializer(serializers.ModelSerializer):
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject
-        fields = ["id", "name", "code", "default_coefficient"]
+        fields = ["id", "name", "code", "default_coefficient", "category"]
 
     def validate_name(self, value):
         school = _request_school(self)
@@ -89,7 +89,7 @@ class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ["id", "user", "matricule", "first_name", "last_name", "gender", "birth_date",
-                  "birth_place", "address", "phone", "photo", "status",
+                  "birth_place", "address", "phone", "photo", "status", "admission_code",
                   "current_class", "parents", "created_at"]
         read_only_fields = ["matricule"]
 
@@ -110,7 +110,7 @@ class StudentWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ["id", "user", "matricule", "first_name", "last_name", "gender", "birth_date",
-                  "birth_place", "address", "phone", "photo", "status", "links"]
+                  "birth_place", "address", "phone", "photo", "status", "admission_code", "links"]
         read_only_fields = ["matricule"]
 
     def validate_links(self, links):
