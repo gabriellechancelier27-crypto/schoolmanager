@@ -3,8 +3,9 @@ import { del, errMessage, getAll, patch, useList } from "../api";
 import { Badge, Empty, ErrorBox, FormModal, PageHeader, Pagination,
          Spinner, SuccessBox } from "../components/ui";
 
+// Les deux types actuels ; les autres libellés servent seulement aux anciennes notes
 const TYPES = { DEVOIR: "Devoir", COMPOSITION: "Composition",
-                INTERROGATION: "Interrogation", PRATIQUE: "Pratique" };
+                INTERROGATION: "Devoir (ancien type)", PRATIQUE: "Devoir (ancien type)" };
 
 export default function GradesHistory() {
   const [periods, setPeriods] = useState([]);
@@ -24,8 +25,9 @@ export default function GradesHistory() {
   }, []);
 
   async function save(form) {
-    await patch(`/grades/${editing.id}/`, { value: form.value, coefficient: form.coefficient });
-    setEditing(null); setError(""); setMsg("Note modifiée (opération journalisée).");
+    await patch(`/grades/${editing.id}/`, { value: form.value });
+    setEditing(null); setError("");
+    setMsg("Note modifiée (opération journalisée). Relancez « Calculer les bulletins » pour mettre à jour les moyennes.");
     list.reload();
   }
 
@@ -33,7 +35,8 @@ export default function GradesHistory() {
     if (!window.confirm(`Supprimer la note ${g.value}/20 de ${g.student} en ${g.subject_name} ?`)) return;
     try {
       await del(`/grades/${g.id}/`);
-      setError(""); setMsg("Note supprimée (opération journalisée).");
+      setError("");
+      setMsg("Note supprimée (opération journalisée). Relancez « Calculer les bulletins » pour mettre à jour les moyennes.");
       list.reload();
     } catch (e) { setMsg(""); setError(errMessage(e)); }
   }
@@ -65,7 +68,7 @@ export default function GradesHistory() {
           <div className="table-wrap">
             <table className="table">
               <thead><tr><th>Élève</th><th>Classe</th><th>Matière</th><th>Période</th>
-                          <th>Type</th><th>N°</th><th>Note</th><th>Pond.</th><th /></tr></thead>
+                          <th>Type</th><th>N°</th><th>Note</th><th /></tr></thead>
               <tbody>
                 {list.items.map((g) => (
                   <tr key={g.id}>
@@ -73,10 +76,10 @@ export default function GradesHistory() {
                     <td>{g.class_name}</td>
                     <td>{g.subject_name}</td>
                     <td>{g.period_name}</td>
-                    <td><Badge tone="blue">{TYPES[g.assessment_type] || g.assessment_type}</Badge></td>
+                    <td><Badge tone={g.assessment_type === "COMPOSITION" ? "yellow" : "blue"}>
+                          {TYPES[g.assessment_type] || g.assessment_type}</Badge></td>
                     <td>{g.sequence}</td>
                     <td><b>{g.value}</b> / 20</td>
-                    <td>{g.coefficient}</td>
                     <td className="row-actions">
                       <button className="btn btn-sm" onClick={() => setEditing(g)}>Modifier</button>
                       <button className="btn btn-sm btn-danger" onClick={() => remove(g)}>Suppr.</button>
@@ -92,10 +95,9 @@ export default function GradesHistory() {
       </div>
 
       {editing && (
-        <FormModal title={`Modifier la note — ${editing.student} · ${editing.subject_name}`}
+        <FormModal title={`Modifier la note, ${editing.student} (${editing.subject_name})`}
           fields={[
             { name: "value", label: "Note /20", type: "number", step: "0.01", min: 0, max: 20 },
-            { name: "coefficient", label: "Pondération", type: "number", step: "0.5", min: "0.5" },
           ]}
           initial={editing} onClose={() => setEditing(null)} onSave={save} />
       )}

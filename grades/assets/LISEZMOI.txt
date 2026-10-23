@@ -1,0 +1,16 @@
+FILIGRANE DU BULLETIN
+=====================
+
+Pour afficher les deux lions de la République togolaise en arrière-plan des bulletins,
+déposez ici l'image du blason sous l'un de ces noms :
+
+    blason.png   (recommandé : fond transparent)
+    blason.jpg / blason.jpeg / blason.webp
+
+Conseils :
+  - image carrée ou presque, d'au moins 800 x 800 pixels ;
+  - un blason en noir et blanc ou en couleurs convient : il est converti en filigrane clair ;
+  - le réglage de l'intensité se fait dans grades/pdf.py (WATERMARK_STRENGTH, 0.12 par défaut).
+
+Sans image, un monogramme « RT » discret est dessiné à la place.
+Après ajout de l'image : git add, git commit, git push, puis git pull et « Recharger » sur PythonAnywhere.

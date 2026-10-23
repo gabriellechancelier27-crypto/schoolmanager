@@ -142,6 +142,9 @@ def dots(c, x1, x2, t):
 # ---------------------------------------------------------------- en-tête
 def draw_header(c, d):
     school = d["school"]
+    if d.get("stale"):
+        text(c, "Moyennes à actualiser : relancez « Calculer les bulletins » pour cette classe.",
+             W / 2, 16, "Helvetica-Bold", 7.5, "c", rgb=(0.75, 0.15, 0.1))
     box(c, LM, 24, CW, 140, r=8)
 
     text(c, d["ministry"], LM + 14, 40, "Helvetica-Bold", 5.2, max_w=190)

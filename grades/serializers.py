@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from academics.models import ClassRoom, Enrollment, Subject, TeachingAssignment
 
+from .averages import ALLOWED_TYPES, DEVOIR
 from .models import Grade, Period, ReportCard, ReportCardLine
 
 
@@ -32,6 +33,8 @@ class GradeSerializer(serializers.ModelSerializer):
     period_name = serializers.CharField(source="period.name", read_only=True)
     enrollment_id = serializers.PrimaryKeyRelatedField(queryset=Enrollment.objects.all(),
                                                        source="enrollment")
+    # Deux types seulement : devoir (moyenne de classe) et composition
+    assessment_type = serializers.ChoiceField(choices=ALLOWED_TYPES, default=DEVOIR)
 
     class Meta:
         model = Grade
@@ -79,8 +82,7 @@ class BulkGradeSerializer(serializers.Serializer):
                                                     source="subject")
     period_id = serializers.PrimaryKeyRelatedField(queryset=Period.objects.all(),
                                                    source="period")
-    assessment_type = serializers.ChoiceField(choices=Grade.AssessmentType.choices,
-                                              default=Grade.AssessmentType.DEVOIR)
+    assessment_type = serializers.ChoiceField(choices=ALLOWED_TYPES, default=DEVOIR)
     sequence = serializers.IntegerField(min_value=1, default=1)
     notes = GradeNoteSerializer(many=True, allow_empty=False)
 

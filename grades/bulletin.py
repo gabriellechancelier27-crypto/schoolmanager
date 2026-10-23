@@ -9,10 +9,10 @@ from django.db.models import Max, Min
 
 from academics.models import Enrollment, TeachingAssignment
 
+from .averages import semester_average, split_grades
 from .models import Grade, ReportCardLine
 
 CENT = Decimal("0.01")
-COMPOSITION = "COMPOSITION"
 
 # (seuil minimum, libellé) : du plus haut au plus bas
 SUBJECT_SCALE = [
@@ -92,17 +92,6 @@ def period_title(name):
     return f"BULLETIN : {(name or '').upper()}"
 
 
-def _weighted(grades):
-    total = Decimal("0")
-    weight = Decimal("0")
-    for g in grades:
-        total += g.value * g.coefficient
-        weight += g.coefficient
-    if weight == 0:
-        return None
-    return (total / weight).quantize(CENT, rounding=ROUND_HALF_UP)
-
-
 def _group_totals(rows):
     coef = sum((r["coef"] for r in rows), Decimal("0"))
     points = sum((r["points"] for r in rows), Decimal("0"))
@@ -127,18 +116,24 @@ def build_bulletin_context(report_card):
         grades_by_subject.setdefault(grade.subject_id, []).append(grade)
 
     by_group = {key: [] for key, _ in GROUPS}
+    stale = False
+    line_subjects = set()
     # Ordre des matières = ordre de création dans la page « Matières »
     for line in report_card.lines.select_related("subject").order_by("subject_id"):
         subject = line.subject
-        grades = grades_by_subject.get(subject.id, [])
+        line_subjects.add(subject.id)
+        continuous, composition = split_grades(grades_by_subject.get(subject.id, []))
+        # le calcul enregistré doit correspondre aux notes actuelles
+        if semester_average(continuous, composition) != line.average:
+            stale = True
         higher = ReportCardLine.objects.filter(
             report_card__period=period, report_card__enrollment__class_room=class_room,
             subject=subject, average__gt=line.average).count()
         assignment = assignments.get(subject.id)
         row = {
             "name": subject.name,
-            "continuous": _weighted([g for g in grades if g.assessment_type != COMPOSITION]),
-            "composition": _weighted([g for g in grades if g.assessment_type == COMPOSITION]),
+            "continuous": continuous,
+            "composition": composition,
             "average": line.average,
             "coef": line.coefficient,
             "points": (line.average * line.coefficient).quantize(CENT, rounding=ROUND_HALF_UP),
@@ -148,6 +143,8 @@ def build_bulletin_context(report_card):
         }
         key = subject.category if subject.category in by_group else "AUTRE"
         by_group[key].append(row)
+    if set(grades_by_subject) - line_subjects:     # matière notée après le dernier calcul
+        stale = True
 
     groups = []
     all_rows = []
@@ -197,4 +194,5 @@ def build_bulletin_context(report_card):
         "principal_title": "Proviseur",
         "principal": fmt_name(director.first_name, director.last_name) if director else "",
         "city": school.city,
+        "stale": stale,
     }

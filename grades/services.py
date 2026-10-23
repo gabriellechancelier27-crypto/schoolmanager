@@ -7,6 +7,7 @@ from academics.models import Enrollment, TeachingAssignment
 from attendance.models import Attendance
 from communication.services import notify_student
 
+from .averages import semester_average, split_grades
 from .models import Grade, ReportCard, ReportCardLine
 
 CENT = Decimal("0.01")
@@ -25,16 +26,9 @@ def mention_for(average, pass_mark) -> str:
 
 
 def subject_average(enrollment, subject, period):
-    """Moyenne d'une matière : Σ(note × pondération) / Σ(pondérations) (§5.1)."""
-    grades = Grade.objects.filter(enrollment=enrollment, subject=subject, period=period)
-    total = Decimal("0")
-    weight = Decimal("0")
-    for grade in grades:
-        total += grade.value * grade.coefficient
-        weight += grade.coefficient
-    if weight == 0:
-        return None
-    return (total / weight).quantize(CENT, rounding=ROUND_HALF_UP)
+    """Moyenne d'une matière = (moyenne des devoirs + note de composition) / 2."""
+    grades = list(Grade.objects.filter(enrollment=enrollment, subject=subject, period=period))
+    return semester_average(*split_grades(grades))
 
 
 @transaction.atomic

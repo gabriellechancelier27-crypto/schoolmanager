@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { errMessage, getAll, post } from "../api";
 import { Empty, ErrorBox, Field, PageHeader, Spinner, SuccessBox } from "../components/ui";
 
+// Deux types seulement : la moyenne des devoirs ("moyenne de classe") et la composition
 const ASSESSMENTS = [
-  { value: "DEVOIR", label: "Devoir" },
+  { value: "DEVOIR", label: "Devoir (moyenne de classe)" },
   { value: "COMPOSITION", label: "Composition" },
-  { value: "INTERROGATION", label: "Interrogation" },
-  { value: "PRATIQUE", label: "Pratique" },
 ];
 
 export default function Grades() {
@@ -26,6 +25,9 @@ export default function Grades() {
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // La composition n'a qu'une note par élève : son numéro est toujours 1
+  const seq = assessment === "COMPOSITION" ? 1 : Number(sequence) || 1;
 
   useEffect(() => {
     getAll("/school-years/").then((ys) => {
@@ -52,30 +54,28 @@ export default function Grades() {
     ]).then(([assigns, enrs]) => {
       setAssignments(assigns);
       setEnrollments(enrs);
-      setValues(Object.fromEntries(enrs.map((e) => [e.id, { value: "", coefficient: 1 }])));
+      setValues(Object.fromEntries(enrs.map((e) => [e.id, { value: "" }])));
     }).catch((e) => setError(errMessage(e))).finally(() => setLoading(false));
   }, [classId, yearId]);
 
   // Pré-remplissage avec les notes déjà saisies
   useEffect(() => {
     if (!periodId || !subjectId || enrollments.length === 0) return;
+    // on vide d'abord les champs, puis on remet les notes existantes
+    setValues(Object.fromEntries(enrollments.map((e) => [e.id, { value: "" }])));
     getAll("/grades/", { period: periodId, subject: subjectId, assessment_type: assessment })
       .then((grades) => {
         const ids = new Set(enrollments.map((e) => e.id));
         setValues((prev) => {
           const next = { ...prev };
-          grades.filter((g) => Number(g.sequence) === Number(sequence) && ids.has(g.enrollment_id))
-            .forEach((g) => {
-              if (next[g.enrollment_id])
-                next[g.enrollment_id] = { value: String(g.value), coefficient: String(g.coefficient) };
-            });
+          grades.filter((g) => Number(g.sequence) === seq && ids.has(g.enrollment_id))
+            .forEach((g) => { next[g.enrollment_id] = { value: String(g.value) }; });
           return next;
         });
       }).catch(() => {});
-  }, [periodId, subjectId, assessment, sequence, enrollments]);
+  }, [periodId, subjectId, assessment, seq, enrollments]);
 
-  const setVal = (id, field, v) =>
-    setValues((prev) => ({ ...prev, [id]: { ...prev[id], [field]: v } }));
+  const setVal = (id, v) => setValues((prev) => ({ ...prev, [id]: { value: v } }));
 
   async function save() {
     const notes = enrollments
@@ -83,7 +83,7 @@ export default function Grades() {
       .map((e) => ({
         enrollment_id: e.id,
         value: parseFloat(values[e.id].value),
-        coefficient: parseFloat(values[e.id].coefficient) || 1,
+        coefficient: 1,
       }));
     if (notes.length === 0) { setError("Aucune note saisie."); return; }
     setSaving(true); setError(""); setMsg("");
@@ -91,7 +91,7 @@ export default function Grades() {
       const res = await post("/grades/bulk/", {
         class_room_id: Number(classId), subject_id: Number(subjectId),
         period_id: Number(periodId), assessment_type: assessment,
-        sequence: Number(sequence), notes,
+        sequence: seq, notes,
       });
       setMsg(`${res.enregistrees} note(s) enregistrée(s) — les parents concernés ont été notifiés.`);
     } catch (e) { setError(errMessage(e)); }
@@ -142,11 +142,17 @@ export default function Grades() {
               {ASSESSMENTS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
             </select>
           </Field>
-          <Field label="N° d'évaluation">
-            <input className="input" type="number" min={1} value={sequence}
-                   onChange={(e) => setSequence(e.target.value)} />
-          </Field>
+          {assessment === "DEVOIR" && (
+            <Field label="N° du devoir (1, 2, 3…)">
+              <input className="input" type="number" min={1} value={sequence}
+                     onChange={(e) => setSequence(e.target.value)} />
+            </Field>
+          )}
         </div>
+        <p className="hint">
+          Les devoirs d'une matière sont moyennés : c'est la « moyenne de classe ». La composition
+          n'a qu'une note par élève. Moyenne de la matière = (moyenne des devoirs + composition) / 2.
+        </p>
         {periods.find((p) => String(p.id) === periodId)?.is_locked && (
           <div className="alert alert-error">Cette période est verrouillée : saisie impossible.</div>
         )}
@@ -155,10 +161,13 @@ export default function Grades() {
       {loading && <Spinner />}
       {ready && !loading && (
         <div className="card">
-          <h2>{classes.find((c) => String(c.id) === classId)?.name} — Notes /20</h2>
+          <h2>
+            {classes.find((c) => String(c.id) === classId)?.name}, notes /20
+            {assessment === "DEVOIR" ? `, devoir n° ${seq}` : ", composition"}
+          </h2>
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Élève</th><th>Matricule</th><th>Note /20</th><th>Pondération</th></tr></thead>
+              <thead><tr><th>Élève</th><th>Matricule</th><th>Note /20</th></tr></thead>
               <tbody>
                 {enrollments.map((e) => (
                   <tr key={e.id}>
@@ -166,17 +175,14 @@ export default function Grades() {
                     <td>{e.student.matricule}</td>
                     <td><input className="input input-mini" type="number" min="0" max="20"
                                step="0.25" value={values[e.id]?.value ?? ""}
-                               onChange={(ev) => setVal(e.id, "value", ev.target.value)} /></td>
-                    <td><input className="input input-mini" type="number" min="0.5" step="0.5"
-                               value={values[e.id]?.coefficient ?? 1}
-                               onChange={(ev) => setVal(e.id, "coefficient", ev.target.value)} /></td>
+                               onChange={(ev) => setVal(e.id, ev.target.value)} /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="hint">Moyenne matière = Σ(note × pondération) / Σ(pondérations).
-             Laisser vide pour ne pas enregistrer un élève.</p>
+          <p className="hint">Laisser vide pour ne pas enregistrer un élève. Après la saisie,
+             relancez « Calculer les bulletins » pour mettre à jour les moyennes.</p>
           <div className="modal-actions">
             <button className="btn btn-primary" onClick={save} disabled={saving}>
               {saving ? "Enregistrement…" : "Enregistrer les notes"}
