@@ -45,6 +45,8 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # L'interface /admin/ est active en développement, coupée par défaut en mode QA
 ADMIN_ENABLED = env_bool("DJANGO_ADMIN", DEBUG)
+# Comptes de démonstration partagés : leur mot de passe ne peut pas être changé
+LOCKED_ACCOUNTS = env_list("DJANGO_LOCKED_ACCOUNTS")
 
 INSTALLED_APPS = [
     "django.contrib.admin",

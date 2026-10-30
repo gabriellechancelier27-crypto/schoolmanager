@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -105,6 +106,13 @@ class UserCreateSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField()
     new_password = serializers.CharField(min_length=8)
+
+    def validate(self, attrs):
+        if self.context["request"].user.username in getattr(settings, "LOCKED_ACCOUNTS", []):
+            raise serializers.ValidationError(
+                "Ce compte de démonstration est partagé : son mot de passe ne peut pas être modifié. "
+                "Demandez la création de votre propre compte.")
+        return attrs
 
     def validate_old_password(self, value):
         if not self.context["request"].user.check_password(value):

@@ -1,3 +1,4 @@
+from django.conf import settings
 from datetime import timedelta
 
 from django.db.models import Sum
@@ -138,6 +139,8 @@ class UserViewSet(SchoolScopedMixin, viewsets.ModelViewSet):
     def reset_password(self, request, pk=None):
         """Nouveau mot de passe provisoire (généré si non fourni)."""
         target = self.get_object()
+        if target.username in getattr(settings, "LOCKED_ACCOUNTS", []):
+            raise ValidationError({"detail": "Compte de démonstration partagé : mot de passe non modifiable."})
         password = clean_password(request.data.get("password"))
         target.set_password(password)
         target.save(update_fields=["password"])
