@@ -101,7 +101,7 @@ export default function Layout() {
             );
           })}
         </nav>
-        <div className="sidebar-footer">Devise : FCFA · v1.4</div>
+        <div className="sidebar-footer">Devise : FCFA · v1.5</div>
       </aside>
       {open && <div className="overlay" onClick={() => setOpen(false)} />}
       <div className="main">

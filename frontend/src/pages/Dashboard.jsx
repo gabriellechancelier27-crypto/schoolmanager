@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ROLES, can, useAuth } from "../auth";
 import { get, errMessage } from "../api";
 import Icon from "../components/Icon";
-import { Empty, ErrorBox, Skeleton, StatCard, fmtFCFA, useCountUp } from "../components/ui";
+import { Empty, ErrorBox, Skeleton, fmtFCFA, useCountUp } from "../components/ui";
 
 const money = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(n));
 const num = (v) => Number(v ?? 0);
@@ -52,14 +52,32 @@ function Head({ user, subtitle, actions }) {
   );
 }
 
+/** Bandeau de chiffres clés : un seul bloc, séparateurs fins, sans cartes empilées. */
+function KpiBand({ items }) {
+  return (
+    <section className="kpi-band" aria-label="Chiffres clés">
+      {items.map((it) => (
+        <div className={`kpi ${it.tone}`} key={it.label}>
+          <span className="stat-icon"><Icon name={it.icon} size={20} /></span>
+          <div className="kpi-body" style={{ minWidth: 0 }}>
+            <div className="kpi-value">
+              {it.value}{it.unit && <small>{it.unit}</small>}
+            </div>
+            <div className="kpi-label">{it.label}</div>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function GenderSplit({ boys, girls }) {
   const ready = useReady();
   const total = boys + girls;
   const pb = total ? (boys / total) * 100 : 0;
   const pg = total ? (girls / total) * 100 : 0;
   return (
-    <section className="card">
-      <h2>Garçons et filles</h2>
+    <>
       <div className="split" role="img" aria-label={`${boys} garçons, ${girls} filles`}>
         <span className="boys" style={{ width: ready ? `${pb}%` : "0%" }} />
         <span className="girls" style={{ width: ready ? `${pg}%` : "0%" }} />
@@ -68,7 +86,7 @@ function GenderSplit({ boys, girls }) {
         <span><i className="dot boys" /> {boys} garçons ({Math.round(pb)} %)</span>
         <span><i className="dot girls" /> {girls} filles ({Math.round(pg)} %)</span>
       </div>
-    </section>
+    </>
   );
 }
 
@@ -136,8 +154,8 @@ export default function Dashboard() {
     return (
       <div className="dash">
         <Head user={user} actions={[]} />
-        <div className="stat-grid">
-          {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} height={96} className="skeleton-card" />)}
+        <div className="kpi-band">
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} height={66} />)}
         </div>
       </div>
     );
@@ -148,52 +166,55 @@ export default function Dashboard() {
     return (
       <div className="dash">
         <Head user={user} subtitle="Vue d'ensemble de la plateforme" actions={actions} />
-        <div className="stat-grid">
-          <StatCard label="Établissements" value={data.etablissements} icon="school" tone="blue" />
-          <StatCard label="Établissements actifs" value={data.etablissements_actifs} icon="check" tone="green" />
-          <StatCard label="Utilisateurs" value={data.utilisateurs} icon="parents" tone="amber" />
-        </div>
+        <KpiBand items={[
+          { label: "Établissements", value: money(num(data.etablissements)), icon: "school", tone: "blue" },
+          { label: "Établissements actifs", value: money(num(data.etablissements_actifs)), icon: "check", tone: "green" },
+          { label: "Utilisateurs", value: money(num(data.utilisateurs)), icon: "parents", tone: "amber" },
+        ]} />
       </div>
     );
   }
 
   const subtitle = [data.etablissement, data.annee_scolaire && `année ${data.annee_scolaire}`]
     .filter(Boolean).join(", ");
+  const band = [
+    { label: "Élèves actifs", value: money(num(data.eleves)), icon: "students", tone: "blue" },
+    { label: "Enseignants", value: money(num(data.enseignants)), icon: "teachers", tone: "green" },
+    { label: "Classes", value: money(num(data.classes)), icon: "classes", tone: "amber" },
+    { label: "Absences (30 j)", value: money(num(data.absences_30j)), icon: "attendance", tone: "coral" },
+  ];
 
   // Personnel de l'établissement (§4.1)
   if (data.eleves !== undefined) {
     return (
       <div className="dash">
         <Head user={user} subtitle={subtitle} actions={actions} />
-        <div className="stat-grid">
-          <StatCard label="Élèves actifs" value={data.eleves} icon="students" tone="blue" />
-          <StatCard label="Enseignants" value={data.enseignants} icon="teachers" tone="green" />
-          <StatCard label="Classes" value={data.classes} icon="classes" tone="amber" />
-          <StatCard label="Inscriptions" value={data.inscriptions} icon="inscriptions" tone="slate" />
-          <StatCard label="Absences sur 30 jours" value={data.absences_30j} icon="attendance" tone="coral" />
-        </div>
-        {data.eleves > 0 && <GenderSplit boys={num(data.garcons)} girls={num(data.filles)} />}
-        {data.recettes !== undefined && (
-          <>
-            <h2 className="section-title">Situation financière {data.annee_scolaire && `de ${data.annee_scolaire}`}</h2>
-            <div className="stat-grid wide">
-              <StatCard label="Recettes" unit="FCFA" value={num(data.recettes)} format={money} icon="finance" tone="green" />
-              <StatCard label="Dépenses" unit="FCFA" value={num(data.depenses)} format={money} icon="history" tone="amber" />
-              <StatCard label="Solde" unit="FCFA" value={num(data.solde)} format={money} icon="check" tone="blue" />
-              <StatCard label="Impayés" unit="FCFA" value={num(data.impayes)} format={money} icon="inbox" tone="coral" />
-            </div>
+        <KpiBand items={band} />
+        <div className="dash-grid">
+          {data.recettes !== undefined && (
             <section className="card fin-card">
               <div className="fin-ring">
                 <Ring pct={data.taux_recouvrement} />
                 <p>des sommes dues ont été encaissées</p>
               </div>
               <div className="fin-bars">
-                <h2>Recettes et dépenses</h2>
+                <h2>Situation financière {data.annee_scolaire && `· ${data.annee_scolaire}`}</h2>
                 <Bars income={num(data.recettes)} expense={num(data.depenses)} />
+                <div className="fin-stats">
+                  <div className="fin-stat"><b>{fmtFCFA(num(data.solde))}</b><span>Solde</span></div>
+                  <div className="fin-stat"><b>{fmtFCFA(num(data.impayes))}</b><span>Impayés</span></div>
+                  <div className="fin-stat"><b>{money(num(data.inscriptions))}</b><span>Inscriptions</span></div>
+                </div>
               </div>
             </section>
-          </>
-        )}
+          )}
+          {data.eleves > 0 && (
+            <section className="card">
+              <h2>Effectifs {data.annee_scolaire && `· ${data.annee_scolaire}`}</h2>
+              <GenderSplit boys={num(data.garcons)} girls={num(data.filles)} />
+            </section>
+          )}
+        </div>
       </div>
     );
   }
@@ -232,14 +253,14 @@ export default function Dashboard() {
   return (
     <div className="dash">
       <Head user={user} subtitle={subtitle || "Votre parcours"} actions={[]} />
-      <div className="stat-grid">
-        <StatCard label="Ma moyenne" value={data.moyenne != null ? num(data.moyenne) : null}
-                  format={(n) => n.toFixed(2)} icon="reports" tone="blue" />
-        <StatCard label="Mon rang" value={data.rang != null ? num(data.rang) : null} icon="grades" tone="green" />
-        <StatCard label="Mention" value={data.mention || "—"} icon="check" tone="amber" />
-        <StatCard label="Mes absences" value={num(data.absences)} icon="attendance" tone="coral" />
-        <StatCard label="Mes retards" value={num(data.retards)} icon="history" tone="slate" />
-      </div>
+      <KpiBand items={[
+        { label: "Ma moyenne", value: data.moyenne != null ? num(data.moyenne).toFixed(2).replace(".", ",") : "—",
+          unit: "/20", icon: "reports", tone: "blue" },
+        { label: "Mon rang", value: data.rang != null ? num(data.rang) : "—", icon: "grades", tone: "green" },
+        { label: "Mention", value: data.mention || "—", icon: "check", tone: "amber" },
+        { label: "Mes absences", value: num(data.absences), icon: "attendance", tone: "coral" },
+        { label: "Mes retards", value: num(data.retards), icon: "history", tone: "slate" },
+      ]} />
     </div>
   );
 }
