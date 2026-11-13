@@ -79,6 +79,23 @@ export const errMessage = (e) => {
   return `Erreur ${e.response.status}.`;
 };
 
+/**
+ * Erreurs de validation Django par champ : {"matricule": ["…"], …} →
+ * {"matricule": "…"} ; ignore les erreurs globales (detail, non_field_errors).
+ */
+export const fieldErrorsFrom = (e) => {
+  const data = e?.response?.data;
+  const out = {};
+  if (!data || typeof data !== "object" || Array.isArray(data)) return out;
+  for (const [key, value] of Object.entries(data)) {
+    if (key === "detail" || key === "non_field_errors") continue;
+    if (Array.isArray(value)) out[key] = value.join(" ");
+    else if (value && typeof value === "object") continue;
+    else if (value) out[key] = String(value);
+  }
+  return out;
+};
+
 /** Hook générique de liste paginée + recherche + rechargement. */
 export function useList(endpoint, params = {}) {
   const [items, setItems] = useState([]);

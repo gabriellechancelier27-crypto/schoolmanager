@@ -73,11 +73,14 @@ export default function Login() {
           <button className="btn btn-primary btn-block" disabled={busy}>
             {busy ? "Connexion en cours…" : "Se connecter"}
           </button>
-          <div className="demo-accounts">
-            Comptes de démonstration, mot de passe <code>demo1234</code> :<br />
-            <code>admin</code> <code>directeur</code> <code>comptable</code>{" "}
-            <code>prof_maths</code> <code>parent1</code> <code>eleve1</code>
-          </div>
+          <details className="demo-accounts">
+            <summary>Comptes de démonstration</summary>
+            <p>
+              Mot de passe <code>demo1234</code> :<br />
+              <code>admin</code> <code>directeur</code> <code>comptable</code>{" "}
+              <code>prof_maths</code> <code>parent1</code> <code>eleve1</code>
+            </p>
+          </details>
         </form>
       </div>
     </div>

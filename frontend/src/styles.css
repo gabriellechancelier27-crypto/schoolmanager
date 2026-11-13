@@ -390,3 +390,39 @@ textarea.cred-text { font-family: Consolas, monospace; font-size: 12.5px; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important;
     transition-duration: .01ms !important; }
 }
+
+/* =========================================================================
+   Améliorations v1.4 : ergonomie, validation des formulaires, finitions
+   ========================================================================= */
+
+/* --- Cartes de chiffres clés : un léger soulèvement au survol --- */
+.stat-card { transition: transform .18s var(--ease), box-shadow .18s var(--ease); }
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 47, 61, .10); }
+
+/* --- Erreurs de validation par champ (FormModal) --- */
+.input.invalid, .input[aria-invalid="true"] { border-color: var(--coral);
+  box-shadow: 0 0 0 4px rgba(214, 90, 64, .12); }
+.field-error { color: var(--coral); font-size: 12.5px; margin-top: 2px; }
+
+/* --- La boîte de dialogue reçoit le focus programmatique --- */
+.modal:focus, .modal:focus-visible { outline: none; }
+
+/* --- Pagination : aller directement à une page --- */
+.pagination-goto { display: flex; align-items: center; gap: 7px; margin-left: 6px; }
+.pagination-goto label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.goto-input { width: 62px; padding: 4px 8px; text-align: center; font-size: 13.5px; }
+.goto-input::-webkit-outer-spin-button, .goto-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.goto-input { -moz-appearance: textfield; appearance: textfield; }
+
+/* --- Comptes de démonstration : volet replié --- */
+.demo-accounts summary { cursor: pointer; font-weight: 600; color: var(--petrol-700);
+  list-style: none; display: flex; align-items: center; gap: 7px; user-select: none; }
+.demo-accounts summary::-webkit-details-marker { display: none; }
+.demo-accounts summary::before { content: "▸"; color: var(--petrol); font-size: 12px;
+  transition: transform .18s var(--ease); }
+.demo-accounts[open] summary::before { transform: rotate(90deg); }
+.demo-accounts summary:hover { color: var(--petrol); }
+.demo-accounts p { margin: 8px 0 0; }
+
+/* --- Titres de groupes du menu : plus affirmés --- */
+.menu-group-title { text-transform: uppercase; letter-spacing: .07em; font-size: 11px; }
